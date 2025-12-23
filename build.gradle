@@ -143,6 +143,12 @@ allprojects {
 		mavenLocal()
 	}
 
+	configurations.all {
+		resolutionStrategy {
+			force "org.apache.groovy:groovy:${versions.groovy}"
+		}
+	}
+
 	jacoco {
 		toolVersion = '0.8.7'
 	}
