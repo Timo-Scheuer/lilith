@@ -24,7 +24,7 @@ buildscript {
 		classpath 'de.huxhorn.gradle:de.huxhorn.gradle.git-state-plugin:0.0.4'
 		classpath 'com.github.ben-manes:gradle-versions-plugin:0.51.0'
 		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
-		classpath 'gradle.plugin.edu.sc.seis:macAppBundle:2.2.3'
+		classpath 'edu.sc.seis.macAppBundle:edu.sc.seis.macAppBundle.gradle.plugin:2.3.1'
 		classpath 'com.github.johnrengelman:shadow:8.1.1'
 		classpath 'de.thetaphi:forbiddenapis:3.7'
 		classpath 'org.kordamp.gradle:jdeps-gradle-plugin:0.4.1'
@@ -141,6 +141,9 @@ allprojects {
 		}
 		mavenCentral()
 		mavenLocal()
+		maven {
+			url 'https://plugins.gradle.org/m2/'
+		}
 	}
 
 	configurations.all {
@@ -254,62 +257,64 @@ subprojects {
 	artifacts { archives sourceJar, javadocJar }
 
     project.ext.defaultProject= {
-	url = 'http://lilithapp.com'
-	name = project.name
-	description = project.description
-	inceptionYear = '2007'
+	url 'http://lilithapp.com'
+	name project.name
+	description project.description
+	inceptionYear '2007'
 
     	scm {
-		connection = 'scm:git:git://github.com/huxi/lilith.git'
-		developerConnection = 'scm:git:ssh://git@github.com:huxi/lilith.git'
-		url = 'http://github.com/huxi/lilith/'
+		connection 'scm:git:git://github.com/huxi/lilith.git'
+		developerConnection 'scm:git:ssh://git@github.com:huxi/lilith.git'
+		url 'http://github.com/huxi/lilith/'
     	}
 
 		licenses {
 			if(gpl)
 			{
 				license {
-					name = 'GNU General Public License v3 (GPL)'
-					url = 'http://www.gnu.org/licenses/gpl.html'
-					distribution = 'repo'
+					name 'GNU General Public License v3 (GPL)'
+					url 'http://www.gnu.org/licenses/gpl.html'
+					distribution 'repo'
 				}
 			}
 			else
 			{
 				license {
-					name = 'GNU Lesser General Public License v3 (LGPL)'
-					url = 'http://www.gnu.org/copyleft/lesser.html'
-					distribution = 'repo'
+					name 'GNU Lesser General Public License v3 (LGPL)'
+					url 'http://www.gnu.org/copyleft/lesser.html'
+					distribution 'repo'
 				}
 
 				license {
-					name = 'The Apache Software License, Version 2.0'
-					url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-					distribution = 'repo'
+					name 'The Apache Software License, Version 2.0'
+					url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+					distribution 'repo'
 				}
 			}
 		}
 
 		issueManagement {
-			system = 'Github'
-			url = 'https://github.com/huxi/lilith/issues'
+			system 'Github'
+			url 'https://github.com/huxi/lilith/issues'
 		}
 
 		developers {
 			developer {
-				id = 'huxhorn'
-				email = 'huxhorn@users.sourceforge.net'
-				name = 'Joern Huxhorn'
+				id 'huxhorn'
+				email 'huxhorn@users.sourceforge.net'
+				name 'Joern Huxhorn'
 				organization = 'Joern Huxhorn'
-				organizationUrl = 'http://lilithapp.com'
-				roles = ['Developer']
+				organizationUrl 'http://lilithapp.com'
+				roles {
+					role 'Developer'
+				}
 			}
 		}
 
-		properties = [
-			'project.build.sourceEncoding': 'UTF-8',
-			'project.reporting.outputEncoding': 'UTF-8'
-		]
+		properties {
+			'project.build.sourceEncoding' 'UTF-8'
+			'project.reporting.outputEncoding' 'UTF-8'
+		}
 	}
 
 	configurations {
@@ -334,7 +339,47 @@ subprojects {
 		publications {
 			mavenJava(MavenPublication) {
 				from components.java
-				pom(defaultProject)
+				pom {
+					url = 'http://lilithapp.com'
+					name = project.name
+					description = project.description
+					inceptionYear = '2007'
+					scm {
+						connection = 'scm:git:git://github.com/huxi/lilith.git'
+						developerConnection = 'scm:git:ssh://git@github.com:huxi/lilith.git'
+						url = 'http://github.com/huxi/lilith/'
+					}
+					licenses {
+						if(gpl) {
+							license {
+								name = 'GNU General Public License v3 (GPL)'
+								url = 'http://www.gnu.org/licenses/gpl.html'
+								distribution = 'repo'
+							}
+						}
+						else {
+							license {
+								name = 'GNU Lesser General Public License v3 (LGPL)'
+								url = 'http://www.gnu.org/copyleft/lesser.html'
+								distribution = 'repo'
+							}
+							license {
+								name = 'The Apache Software License, Version 2.0'
+								url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+								distribution = 'repo'
+							}
+						}
+					}
+					developers {
+						developer {
+							id = 'huxhorn'
+							email = 'huxhorn@users.sourceforge.net'
+							name = 'Joern Huxhorn'
+							organization = 'Joern Huxhorn'
+							organizationUrl = 'http://lilithapp.com'
+						}
+					}
+				}
 			}
 		}
 		repositories {
@@ -397,7 +442,7 @@ project(':lilith') {
 	}
 
 	createDmg {
-		enabled = false
+		enabled false
 	}
 
 	jar {
@@ -405,8 +450,9 @@ project(':lilith') {
 			'Main-Class': "${mainClassName}",
 			// Class-Path must be evaluated at runtime not configuration time.
 			// see http://gradle.1045684.n5.nabble.com/Manifest-classpath-incomplete-and-distribution-ZIP-empty-td2635807.html
-			'Class-Path': configurations.runtimeClasspath.collect { it.name }.join(' ')
+			'Class-Path': "${ -> configurations.runtimeClasspath.collect { File file -> file.name }.sort().join(' ')}"
 		)
+
 	}
 
 	processResources {
@@ -478,8 +524,7 @@ project(':lilith') {
 			}
 
 			into('lib') {
-				from configurations.default
-				from configurations.default.allArtifacts.files
+				from configurations.runtimeClasspath
 				exclude '*-sources.jar'
 				exclude '*-javadoc.jar'
 				rename 'de.huxhorn.lilith-(.*).jar', 'lilith.jar'
