@@ -8,7 +8,7 @@ if(prereleaseIdentifier) {
 }
 
 project.ext.versions = [
-'aspectj':        '1.9.7',
+'aspectj':        '1.9.22',
 'bytebuddy':      '1.12.3',
 'groovy':         '4.0.12',
 'httpClient':     '4.5.13',
@@ -38,6 +38,7 @@ project.ext.libraries = [
 'glazedlists':              'net.java.dev.glazedlists:glazedlists_java16:1.10.0',
 'groovy':                   "org.apache.groovy:groovy:${versions.groovy}",
 'groovy-console':           "org.apache.groovy:groovy-console:${versions.groovy}",
+'groovy-swing':             "org.apache.groovy:groovy-swing:${versions.groovy}",
 'groovy-xml':               "org.apache.groovy:groovy-xml:${versions.groovy}",
 'httpclient':               "org.apache.httpcomponents:httpclient:${versions.httpClient}",
 'httpcore':                 "org.apache.httpcomponents:httpcore:${versions.httpCore}",
