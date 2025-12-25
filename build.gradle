@@ -113,9 +113,9 @@ gradle.taskGraph.whenReady { taskGraph ->
 }
 
 if(!System.properties.'release' && !System.properties.'prerelease') {
-	defaultTasks 'build', 'uploadPublished', 'shadowJar', 'myDistZip', 'myDistTgz'
+	defaultTasks 'build', 'publish', 'shadowJar', 'myDistZip', 'myDistTgz'
 } else {
-	defaultTasks 'build', 'uploadPublished', 'shadowJar', 'myDistZip', 'myDistTgz', 'signJavadocZip', 'signSourceZip'
+	defaultTasks 'build', 'publish', 'shadowJar', 'myDistZip', 'myDistTgz', 'signJavadocZip', 'signSourceZip'
 }
 
 allprojects {
