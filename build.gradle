@@ -25,7 +25,7 @@ buildscript {
 		classpath 'de.huxhorn.gradle:de.huxhorn.gradle.git-state-plugin:0.0.4'
 		classpath 'com.github.ben-manes:gradle-versions-plugin:0.20.0'
 		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
-		classpath 'com.github.johnrengelman:shadow:8.1.1'
+		classpath 'com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:8.3.0'
 		classpath 'de.thetaphi:forbiddenapis:3.7'
 		classpath 'org.kordamp.gradle:jdeps-gradle-plugin:0.4.1'
 		classpath 'org.beryx.jlink:org.beryx.jlink.gradle.plugin:3.2.0'
@@ -339,7 +339,7 @@ subprojects {
 project(':lilith') {
 	apply plugin: 'application'
 	apply plugin: de.huxhorn.gradle.git.GitStatePlugin
-	apply plugin: 'com.github.johnrengelman.shadow'
+	apply plugin: 'com.gradleup.shadow'
 	apply plugin: 'org.beryx.jlink'
 
 /*
