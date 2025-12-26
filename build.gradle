@@ -488,6 +488,10 @@ project(':lilith') {
 			icon = "${projectDir}/src/main/mac-resources/Lilith.icns"
 		}
 	}
+
+	test {
+		include '**/*Test.groovy'
+	}
 }
 
 // source: https://gist.github.com/aalmiray/e6f54aa4b3803be0bcac
