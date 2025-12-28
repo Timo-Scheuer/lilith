@@ -2,7 +2,6 @@ apply from: 'dependencyDefinitions.gradle'
 
 subprojects {
     apply plugin: 'java'
-    apply plugin: 'maven'
 }
 
 project(':lilith-sender') {
@@ -830,6 +829,7 @@ project(':lilith') {
 		implementation libraries.'glazedlists'
 		implementation libraries.'groovy'
 		implementation libraries.'groovy-console'
+		implementation libraries.'groovy-swing'
 		implementation libraries.'groovy-xml'
 		implementation libraries.'httpclient'
 		implementation libraries.'httpcore'

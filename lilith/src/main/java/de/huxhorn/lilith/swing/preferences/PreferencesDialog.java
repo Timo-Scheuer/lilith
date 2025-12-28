@@ -27,7 +27,7 @@ import de.huxhorn.lilith.swing.LilithKeyStrokes;
 import de.huxhorn.lilith.swing.MainFrame;
 import de.huxhorn.sulky.conditions.Condition;
 import de.huxhorn.sulky.swing.KeyStrokes;
-import groovy.ui.Console;
+import groovy.console.ui.Console;
 import java.awt.BorderLayout;
 import java.awt.CardLayout;
 import java.awt.Component;

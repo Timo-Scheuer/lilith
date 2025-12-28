@@ -20,7 +20,7 @@
 		</property>
 	</bean>
 
-	<aop:config proxy-target-class="true">
+	<aop:config>
 		<aop:aspect ref="tracingAspect">
 			<aop:pointcut id="testServicePointcut"
 					expression="execution(* de.huxhorn.lilith.tracing.ExampleService.*(..))"/>

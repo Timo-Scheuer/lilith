@@ -25,10 +25,10 @@ buildscript {
 		classpath 'de.huxhorn.gradle:de.huxhorn.gradle.git-state-plugin:0.0.4'
 		classpath 'com.github.ben-manes:gradle-versions-plugin:0.20.0'
 		classpath 'org.kt3k.gradle.plugin:coveralls-gradle-plugin:2.8.2'
-		classpath 'gradle.plugin.edu.sc.seis:macAppBundle:2.2.3'
-		classpath 'com.github.jengelman.gradle.plugins:shadow:5.2.0'
-		classpath 'de.thetaphi:forbiddenapis:3.2'
+		classpath 'com.gradleup.shadow:com.gradleup.shadow.gradle.plugin:8.3.0'
+		classpath 'de.thetaphi:forbiddenapis:3.7'
 		classpath 'org.kordamp.gradle:jdeps-gradle-plugin:0.4.1'
+		classpath 'org.beryx.jlink:org.beryx.jlink.gradle.plugin:3.2.0'
 	}
 }
 
@@ -39,15 +39,15 @@ import org.apache.tools.ant.filters.FixCrLfFilter
 import org.gradle.plugins.signing.Sign
 
 wrapper {
-	gradleVersion = '6.8.1'
+	gradleVersion = '8.8'
 	// TODO:
 	// maven -> maven-publish
 	// MacAppBundle
 }
 
 def copyright = "Copyright \u00a9 2007-2021 J\u00f6rn Huxhorn"
-def globalSourceCompatibility = 1.8
-def globalTargetCompatibility = 1.8
+def globalSourceCompatibility = 21
+def globalTargetCompatibility = 21
 
 apply plugin: 'idea'
 
@@ -73,8 +73,8 @@ apply plugin: 'com.github.kt3k.coveralls' // see https://github.com/kt3k/coveral
 
 task javadocAll(type: Javadoc) {
 	destinationDir = file("$buildDir/javadoc")
-	source = files { subprojects.collect { it.sourceSets.main.java } }
-	classpath = files { subprojects.collect { it.sourceSets.main.compileClasspath } }
+	source subprojects.sourceSets.main.allJava
+	classpath = files(subprojects.collect { it.sourceSets.main.compileClasspath })
 	// disable doclint for protobuf
 	// http://blog.joda.org/2014/02/turning-off-doclint-in-jdk-8-javadoc.html
 	// https://github.com/google/protobuf/issues/304
@@ -84,12 +84,12 @@ task javadocAll(type: Javadoc) {
 }
 
 task sourceZip(type: Zip) {
-	classifier = 'sources'
+	archiveClassifier = 'sources'
 	from { subprojects.collect { it.sourceSets.main.allSource } }
 }
 
 task javadocZip(type: Zip) {
-	classifier = 'javadoc'
+	archiveClassifier = 'javadoc'
 	from javadocAll.outputs.files
 }
 
@@ -113,9 +113,9 @@ gradle.taskGraph.whenReady { taskGraph ->
 }
 
 if(!System.properties.'release' && !System.properties.'prerelease') {
-	defaultTasks 'build', 'uploadPublished', 'shadowJar', 'myDistZip', 'myDistTgz', 'appTgz'
+	defaultTasks 'build', 'publish', 'shadowJar', 'myDistZip', 'myDistTgz'
 } else {
-	defaultTasks 'build', 'uploadPublished', 'shadowJar', 'myDistZip', 'myDistTgz', 'appTgz', 'signJavadocZip', 'signSourceZip'
+	defaultTasks 'build', 'publish', 'shadowJar', 'myDistZip', 'myDistTgz', 'signJavadocZip', 'signSourceZip'
 }
 
 allprojects {
@@ -144,8 +144,14 @@ allprojects {
 		mavenLocal()
 	}
 
+	configurations.all {
+		resolutionStrategy {
+			force 'com.google.guava:guava:33.0.0-jre'
+		}
+	}
+
 	jacoco {
-		toolVersion = '0.8.7'
+		toolVersion = '0.8.11'
 	}
 
 	task printConfig doLast {
@@ -163,8 +169,9 @@ allprojects {
 }
 
 subprojects {
+	apply plugin: 'java-library'
 	apply plugin: 'groovy'
-	apply plugin: 'maven'
+	apply plugin: 'maven-publish'
 	apply plugin: 'signing'
 	apply plugin: 'de.thetaphi.forbiddenapis'
 	apply plugin: 'checkstyle'
@@ -177,9 +184,20 @@ subprojects {
 				'configDir': rootProject.file('config/checkstyle'),
 				'baseDir': rootDir,
 			]
-		toolVersion = '9.2'
+		toolVersion = '10.12.7'
 		//ignoreFailures = true
 	}
+
+	configurations {
+		checkstyle {
+			resolutionStrategy.eachDependency {
+				if (it.requested.group == 'com.google.collections') {
+					it.useTarget("com.google.guava:guava:${it.requested.version}")
+				}
+			}
+		}
+	}
+
 	
 	pmd {
 		ruleSetFiles = files(rootProject.file('config/pmd/ruleSet.xml'))
@@ -208,9 +226,9 @@ subprojects {
 		sourceDirectories.from(files(sourceSets.main.allSource.srcDirs))
 		classDirectories.from(files(sourceSets.main.output))
 		reports {
-			html.enabled = true
-			xml.enabled = true
-			csv.enabled = false
+			html.required = true
+			xml.required = true
+			csv.required = false
 		}
 	}
 	//defaultTasks 'build', 'uploadPublished'
@@ -242,77 +260,14 @@ subprojects {
 
 	boolean gpl=['lilith', 'lilith-conditions', 'lilith-engine', 'lilith-xml-logging'].contains(project.name)
 
-	task sourceJar(type: Jar) { from sourceSets.main.allSource; classifier = 'sources' }
-	task javadocJar(type: Jar) { from javadoc.outputs.files; classifier = 'javadoc' }
+	task sourceJar(type: Jar) { from sourceSets.main.allSource; archiveClassifier = 'sources' }
+	task javadocJar(type: Jar) { from javadoc.outputs.files; archiveClassifier = 'javadoc' }
 
 	artifacts { archives sourceJar, javadocJar }
-
-    project.ext.defaultProject= {
-    	url 'http://lilithapp.com'
-    	name project.name
-    	description project.description
-    	inceptionYear '2007'
-
-    	scm {
-    		connection 'scm:git:git://github.com/huxi/lilith.git'
-    		developerConnection 'scm:git:ssh://git@github.com:huxi/lilith.git'
-    		url 'http://github.com/huxi/lilith/'
-    	}
-
-		licenses {
-			if(gpl)
-			{
-				license {
-					name 'GNU General Public License v3 (GPL)'
-					url 'http://www.gnu.org/licenses/gpl.html'
-					distribution 'repo'
-				}
-			}
-			else
-			{
-				license {
-					name 'GNU Lesser General Public License v3 (LGPL)'
-					url 'http://www.gnu.org/copyleft/lesser.html'
-					distribution 'repo'
-				}
-
-				license {
-					name 'The Apache Software License, Version 2.0'
-					url 'http://www.apache.org/licenses/LICENSE-2.0.txt'
-					distribution 'repo'
-				}
-			}
-		}
-
-		issueManagement {
-			system 'Github'
-			url 'https://github.com/huxi/lilith/issues'
-		}
-
-		developers {
-			developer {
-				id 'huxhorn'
-				email 'huxhorn@users.sourceforge.net'
-				name 'Joern Huxhorn'
-				organization = 'Joern Huxhorn'
-				organizationUrl 'http://lilithapp.com'
-				roles {
-					role 'Developer'
-				}
-			}
-		}
-
-		properties {
-			'project.build.sourceEncoding' 'UTF-8'
-			'project.reporting.outputEncoding' 'UTF-8'
-		}
-	}
 
 	configurations {
 		all*.exclude group: 'commons-logging', module: 'commons-logging'
 		all*.exclude group: 'org.codehaus.groovy', module: 'groovy-all'
-
-		published.extendsFrom archives, signatures
 	}
 
 	dependencies {
@@ -321,35 +276,71 @@ subprojects {
 		testImplementation libraries.'junit'
 		testImplementation libraries.'slf4j-api'
 		testImplementation libraries.'spock-core', {
-			exclude group: 'org.codehaus.groovy', module: 'groovy-all' 
+			exclude group: 'org.codehaus.groovy', module: 'groovy-all'
 		}
 		testRuntimeOnly libraries.'logback-classic'
 	}
 
-	def deployer = null
-
-	uploadPublished {
-		deployer = repositories.mavenDeployer {
-			repository(url: localReleaseRepo)
-			snapshotRepository(url: localSnapshotRepo)
-			beforeDeployment { MavenDeployment deployment ->
-				signing.signPom(deployment)
+	publishing {
+		publications {
+			mavenJava(MavenPublication) {
+				from components.java
+				pom {
+					url = 'http://lilithapp.com'
+					name = project.name
+					description = project.description
+					inceptionYear = '2007'
+					scm {
+						connection = 'scm:git:git://github.com/huxi/lilith.git'
+						developerConnection = 'scm:git:ssh://git@github.com:huxi/lilith.git'
+						url = 'http://github.com/huxi/lilith/'
+					}
+					licenses {
+						if(gpl) {
+							license {
+								name = 'GNU General Public License v3 (GPL)'
+								url = 'http://www.gnu.org/licenses/gpl.html'
+								distribution = 'repo'
+							}
+						}
+						else {
+							license {
+								name = 'GNU Lesser General Public License v3 (LGPL)'
+								url = 'http://www.gnu.org/copyleft/lesser.html'
+								distribution = 'repo'
+							}
+							license {
+								name = 'The Apache Software License, Version 2.0'
+								url = 'http://www.apache.org/licenses/LICENSE-2.0.txt'
+								distribution = 'repo'
+							}
+						}
+					}
+					developers {
+						developer {
+							id = 'huxhorn'
+							email = 'huxhorn@users.sourceforge.net'
+							name = 'Joern Huxhorn'
+							organization = 'Joern Huxhorn'
+							organizationUrl = 'http://lilithapp.com'
+						}
+					}
+				}
+			}
+		}
+		repositories {
+			maven {
+				url = version.endsWith('SNAPSHOT') ? localSnapshotRepo : localReleaseRepo
 			}
 		}
 	}
-
-	def installer = install.repositories.mavenInstaller
-
-	installer.pom.project defaultProject
-
-	deployer.pom.project defaultProject
 }
 
 project(':lilith') {
 	apply plugin: 'application'
 	apply plugin: de.huxhorn.gradle.git.GitStatePlugin
-	apply plugin: 'edu.sc.seis.macAppBundle'
-	apply plugin: 'com.github.johnrengelman.shadow'
+	apply plugin: 'com.gradleup.shadow'
+	apply plugin: 'org.beryx.jlink'
 
 /*
 ### macappbundle
@@ -371,34 +362,6 @@ project(':lilith') {
 	def theMainClassName = 'de.huxhorn.sulky.version.Main'
 
 	mainClassName = theMainClassName
-
-	macAppBundle {
-		mainClassName = theMainClassName
-		appName = 'Lilith' // ends up in CFBundleName
-		bundleIdentifier = 'de.huxhorn.lilith'
-		creatorCode = 'Llth'
-		//jvmVersion = '1.8+'
-		//jvmVersion is AppleJava only
-		icon = "${projectDir}/src/main/mac-resources/Lilith.icns"
-		bundleExtras = [
-			'CFBundleShortVersionString': version,
-			//'CFBundleGetInfoString': copyright,
-			'NSHumanReadableCopyright': copyright,
-			'NSSupportsAutomaticGraphicsSwitching': true,
-		]
-		javaProperties = [
-			'apple.laf.useScreenMenuBar': 'true'
-		]
-		javaExtras = [
-			'-Xdock:name': appName // About name
-		]
-		bundleJRE = false
-		jreHome = 'N/A'
-	}
-
-	createDmg {
-		enabled false
-	}
 
 	jar {
 		manifest.attributes(
@@ -479,8 +442,7 @@ project(':lilith') {
 			}
 
 			into('lib') {
-				from configurations.default
-				from configurations.default.allArtifacts.files
+				from configurations.runtimeClasspath
 				exclude '*-sources.jar'
 				exclude '*-javadoc.jar'
 				rename 'de.huxhorn.lilith-(.*).jar', 'lilith.jar'
@@ -488,27 +450,20 @@ project(':lilith') {
 		}
 	}
 
-	shadowDistZip.classifier = 'shadow'
-	shadowDistTar.classifier = 'shadow'
+	shadowDistZip.archiveClassifier = 'shadow'
+	shadowDistTar.archiveClassifier = 'shadow'
 	
-	task myDistZip(dependsOn: configurations.default.allArtifacts.buildDependencies, type: Zip) {
+	task myDistZip(dependsOn: configurations.runtimeClasspath.allArtifacts.buildDependencies, type: Zip) {
 		description = 'Creates a ZIP containing the Lilith distribution.'
-		classifier = 'bin'
+		archiveClassifier = 'bin'
 		with distSpec
 	}
 
-	task myDistTgz(dependsOn: configurations.default.allArtifacts.buildDependencies, type: Tar) {
+	task myDistTgz(dependsOn: configurations.runtimeClasspath.allArtifacts.buildDependencies, type: Tar) {
 		description = 'Creates a TGZ containing the Lilith distribution.'
-		classifier = 'bin'
+		archiveClassifier = 'bin'
 		compression = Compression.GZIP
 		with distSpec
-	}
-
-	task appTgz(dependsOn: createApp, type: Tar) {
-		description = 'Creates a TGZ containing the Lilith Mac OS X app.'
-		classifier = 'app'
-		compression = Compression.GZIP
-		from "${projectDir}/build/macApp"
 	}
 
 	signing {
@@ -516,7 +471,26 @@ project(':lilith') {
 		sign shadowJar
 		sign myDistZip
 		sign myDistTgz
-		sign appTgz
+	}
+
+	jlink {
+		moduleName = 'de.huxhorn.lilith'
+		mainClass = theMainClassName
+		launcher {
+			name = 'lilith'
+		}
+		jpackage {
+			imageName = 'Lilith'
+			installerName = 'Lilith'
+			appVersion = version
+			vendor = 'Joern Huxhorn'
+			copyright = copyright
+			icon = "${projectDir}/src/main/mac-resources/Lilith.icns"
+		}
+	}
+
+	test {
+		include '**/*Test.groovy'
 	}
 }
 
@@ -529,10 +503,10 @@ task jacocoRootReport(type: org.gradle.testing.jacoco.tasks.JacocoReport) {
 	classDirectories.from(files(subprojects.sourceSets.main.output))
 	executionData.from(files(subprojects.jacocoTestReport.executionData))
 	reports {
-		html.enabled = true
-		xml.enabled = true
-		xml.destination file("${buildDir}/reports/jacoco/report.xml")
-		csv.enabled = false
+		html.required = true
+		xml.required = true
+		xml.destination = file("${buildDir}/reports/jacoco/report.xml")
+		csv.required = false
 	}
 	onlyIf = {
 		true
